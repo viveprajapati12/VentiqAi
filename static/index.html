@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VentiqAI AQI // Smart AQI Intelligence & Forecasting</title>
+    
+    <!-- Meta tags for SEO -->
+    <meta name="description" content="AeroPredict uses advanced machine learning to predict and visualize live Air Quality Index (AQI) forecasts. Tweak environmental metrics to simulate real-time air conditions.">
+    <meta name="keywords" content="AQI, Air Quality Index, Machine Learning, Prediction, Forecast, PM2.5, PM10, CO, Weather">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    
+    <!-- Leaflet.js (Map) CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="css/style.css?v=1.6">
+</head>
+<body>
+    <!-- Fullscreen Map Background -->
+    <div id="map"></div>
+    <div class="map-overlay"></div>
+
+    <!-- Floating Map Controls -->
+    <button class="restore-panels-btn glass-panel" id="restore-panels-btn">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span>Show Dashboard Panels</span>
+    </button>
+
+    <!-- Main Container -->
+    <div class="app-container">
+        
+        <!-- Left Sidebar Navigation -->
+        <aside class="sidebar glass-panel">
+            <div class="logo-section">
+                <img id="logo-img" src="logo.png" alt="VentiqAI" style="width: 72px; height: auto; object-fit: contain; display: none; margin-bottom: 4px;">
+                <div class="logo-icon" id="logo-icon-fallback">
+                    <span class="material-symbols-outlined">air</span>
+                </div>
+                <h1 class="logo-text" id="logo-text-element">
+                    <span style="color: #0f2d59;">Ventiq</span><span style="color: #2ecc71;">AI</span>
+                </h1>
+                <span class="logo-quote" id="logo-quote-element">Predict Smarter. Breathe Better.</span>
+            </div>
+            
+            <nav class="nav-links">
+                <button class="nav-item active" data-target="dashboard-panel" id="nav-dashboard">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span class="nav-tooltip">Dashboard</span>
+                </button>
+                <button class="nav-item" data-target="map-panel" id="nav-map">
+                    <span class="material-symbols-outlined">map</span>
+                    <span class="nav-tooltip">Full Map</span>
+                </button>
+                <button class="nav-item" data-target="predict-panel" id="nav-predict">
+                    <span class="material-symbols-outlined">online_prediction</span>
+                    <span class="nav-tooltip">Predict AQI</span>
+                </button>
+                <button class="nav-item" data-target="comparison-panel" id="nav-comparison">
+                    <span class="material-symbols-outlined">compare_arrows</span>
+                    <span class="nav-tooltip">City Comparison</span>
+                </button>
+                <button class="nav-item" data-target="history-panel" id="nav-history">
+                    <span class="material-symbols-outlined">history</span>
+                    <span class="nav-tooltip">Historical Trends</span>
+                </button>
+                <button class="nav-item" data-target="health-panel" id="nav-health">
+                    <span class="material-symbols-outlined">health_and_safety</span>
+                    <span class="nav-tooltip">Health Advisory</span>
+                </button>
+                <button class="nav-item" data-target="about-panel" id="nav-about">
+                    <span class="material-symbols-outlined">info</span>
+                    <span class="nav-tooltip">Model Info</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <span class="version-badge">v1.2.0</span>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- Top Search Bar (Floating) -->
+            <header class="top-bar glass-panel">
+                <div class="search-container">
+                    <span class="material-symbols-outlined search-icon">search</span>
+                    <input type="text" id="city-search-input" placeholder="Search city or locality..." autocomplete="off">
+                    <button class="search-btn" id="city-search-btn">
+                        <span>Search</span>
+                    </button>
+                    <button class="location-btn" id="gps-btn" title="Use current location">
+                        <span class="material-symbols-outlined">my_location</span>
+                    </button>
+                </div>
+                
+                <div class="location-display">
+                    <span class="material-symbols-outlined">location_on</span>
+                    <span id="current-location-text">Detecting Location...</span>
+                </div>
+            </header>
+
+            <!-- Panels Section (Dynamically toggled) -->
+            <div class="panels-container">
+                
+                <!-- 1. DASHBOARD PANEL (DEFAULT) -->
+                <div class="content-panel active" id="dashboard-panel">
+                    <div class="dashboard-grid">
+                        
+                        <!-- Left Panel: Pollutant Values (Horizontal progress tracks) -->
+                        <div class="grid-item left-column glass-panel">
+                            <h3 class="panel-title">
+                                <span class="material-symbols-outlined title-icon" style="color: var(--color-pink)">heap_snapshot_large</span>
+                                Live Pollutant Concentrations
+                            </h3>
+                            <div class="pollutant-list" id="pollutants-container">
+                                <!-- Pollutant bars will be dynamically generated by JS -->
+                                <div class="pollutant-skeleton"></div>
+                                <div class="pollutant-skeleton"></div>
+                                <div class="pollutant-skeleton"></div>
+                            </div>
+                            
+                            <h3 class="panel-title" style="margin-top: 30px;">
+                                <span class="material-symbols-outlined title-icon" style="color: var(--color-katha)">thermostat</span>
+                                Live Weather Conditions
+                            </h3>
+                            <div class="weather-factors-grid" id="weather-factors-container">
+                                <div class="weather-factor-card">
+                                    <span class="material-symbols-outlined" style="color: var(--color-pink)">device_thermostat</span>
+                                    <div class="factor-info">
+                                        <span class="factor-label">Temperature</span>
+                                        <strong class="factor-value" id="weather-temp-display">-- °C</strong>
+                                    </div>
+                                </div>
+                                <div class="weather-factor-card">
+                                    <span class="material-symbols-outlined" style="color: var(--color-katha)">humidity_percentage</span>
+                                    <div class="factor-info">
+                                        <span class="factor-label">Humidity</span>
+                                        <strong class="factor-value" id="weather-humidity-display">-- %</strong>
+                                    </div>
+                                </div>
+                                <div class="weather-factor-card">
+                                    <span class="material-symbols-outlined" style="color: #3498db">air</span>
+                                    <div class="factor-info">
+                                        <span class="factor-label">Wind Speed</span>
+                                        <strong class="factor-value" id="weather-wind-display">-- km/h</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Predicted AQI, AQI Trend, and Pollutant Trend stacked -->
+                        <div class="grid-item right-column">
+                            <!-- Predicted AQI & Trust Badge -->
+                            <div class="aqi-card glass-panel" id="aqi-card-container">
+                                <div class="aqi-card-header">
+                                    <div>
+                                        <span class="aqi-card-subtitle">AI PREDICTED AQI</span>
+                                        <h2 class="aqi-value" id="aqi-value-display">--</h2>
+                                    </div>
+                                    <div class="accuracy-badge" id="trust-badge">
+                                        <span class="material-symbols-outlined">shield_check</span>
+                                        <span>Model R² 0.99</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="aqi-status-row">
+                                    <span class="aqi-category-badge" id="aqi-category-display">Loading...</span>
+                                    <div class="live-indicator">
+                                        <span class="ping-dot"></span>
+                                        <span class="indicator-text">Real-time Predict</span>
+                                    </div>
+                                </div>
+
+                                <div class="health-recommendation-box" id="health-box">
+                                    <p class="health-text" id="health-recommendation-display">Fetching latest environmental factors...</p>
+                                </div>
+                            </div>
+
+                            <!-- AQI Trend Line Chart -->
+                            <div class="chart-card glass-panel collapsible-card" id="aqi-trend-card">
+                                <div class="card-header-row">
+                                    <h3 class="panel-title">
+                                        <span class="material-symbols-outlined title-icon" style="color: var(--color-katha)">line_curve</span>
+                                        AQI Trend (Last 15 Days)
+                                    </h3>
+                                    <button type="button" class="collapse-card-btn" onclick="toggleCardCollapse('aqi-trend-card')">
+                                        <span class="material-symbols-outlined icon-arrow">keyboard_arrow_up</span>
+                                    </button>
+                                </div>
+                                <div class="card-body-slide">
+                                    <div class="chart-container">
+                                        <canvas id="aqiTrendChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Pollutant Trend Chart -->
+                            <div class="chart-card glass-panel collapsible-card" id="pollutant-trend-card">
+                                <div class="card-header-row">
+                                    <h3 class="panel-title">
+                                        <span class="material-symbols-outlined title-icon" style="color: var(--color-pink)">show_chart</span>
+                                        Core Pollutants Trend (PM2.5 vs PM10)
+                                    </h3>
+                                    <button type="button" class="collapse-card-btn" onclick="toggleCardCollapse('pollutant-trend-card')">
+                                        <span class="material-symbols-outlined icon-arrow">keyboard_arrow_up</span>
+                                    </button>
+                                </div>
+                                <div class="card-body-slide">
+                                    <div class="chart-container">
+                                        <canvas id="pollutantTrendChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+
+                <!-- 2. FULL MAP PANEL (Minimizes overlays for immersive view) -->
+                <div class="content-panel" id="map-panel">
+                    <div class="map-controls-panel glass-panel">
+                        <h3>Map Navigation</h3>
+                        <p>Explore AQI across stations globally. Colors indicate air safety levels.</p>
+                        <div class="map-stats-summary">
+                            <div class="stat-row">
+                                <span>Cities Loaded:</span>
+                                <strong id="map-cities-count">12</strong>
+                            </div>
+                        </div>
+                        <button class="btn accent-btn" id="reset-map-zoom">
+                            <span class="material-symbols-outlined">filter_center_focus</span> Reset View
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. PREDICT AQI PANEL (Interactive simulation form) -->
+                <div class="content-panel" id="predict-panel">
+                    <div class="panel-wrapper">
+                        <div class="panel-header-desc">
+                            <h2><span class="material-symbols-outlined title-icon">online_prediction</span> Custom AQI Predictor</h2>
+                            <p>Manually adjust pollutants and climate features to run instant machine learning inference on our XGBoost model.</p>
+                        </div>
+                        
+                        <div class="prediction-grid">
+                            <div class="predict-form-container glass-panel">
+                                <form id="aqi-predict-form">
+                                    <div class="form-section-title">Pollutants</div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <div class="input-header">
+                                                <label for="input-pm25">PM2.5 (Fine Particles)</label>
+                                                <span class="input-val-badge" id="val-pm25">50 µg/m³</span>
+                                            </div>
+                                            <div class="slider-wrapper">
+                                                <input type="range" id="input-pm25" min="0" max="350" value="50" class="styled-slider">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <div class="input-header">
+                                                <label for="input-pm10">PM10 (Coarse Particles)</label>
+                                                <span class="input-val-badge" id="val-pm10">80 µg/m³</span>
+                                            </div>
+                                            <div class="slider-wrapper">
+                                                <input type="range" id="input-pm10" min="0" max="500" value="80" class="styled-slider">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group full-width">
+                                            <div class="input-header">
+                                                <label for="input-co">Carbon Monoxide (CO)</label>
+                                                <span class="input-val-badge" id="val-co">800 µg/m³</span>
+                                            </div>
+                                            <div class="slider-wrapper">
+                                                <input type="range" id="input-co" min="0" max="4000" value="800" class="styled-slider">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-section-title">Meteorological Parameters</div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <div class="input-header">
+                                                <label for="input-temp">Temperature</label>
+                                                <span class="input-val-badge" id="val-temp">24°C</span>
+                                            </div>
+                                            <div class="slider-wrapper">
+                                                <input type="range" id="input-temp" min="-10" max="45" value="24" class="styled-slider">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <div class="input-header">
+                                                <label for="input-humidity">Humidity</label>
+                                                <span class="input-val-badge" id="val-humidity">60%</span>
+                                            </div>
+                                            <div class="slider-wrapper">
+                                                <input type="range" id="input-humidity" min="0" max="100" value="60" class="styled-slider">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <div class="input-header">
+                                                <label for="input-wind">Wind Speed</label>
+                                                <span class="input-val-badge" id="val-wind">12 km/h</span>
+                                            </div>
+                                            <div class="slider-wrapper">
+                                                <input type="range" id="input-wind" min="0" max="60" value="12" class="styled-slider">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="input-city">Simulation City Node</label>
+                                            <input type="text" id="input-city" class="styled-select" list="preset-cities-list" placeholder="Delhi, Patna, Mumbai..." value="Delhi" autocomplete="off">
+                                            <datalist id="preset-cities-list">
+                                                <option value="Delhi">
+                                                <option value="Patna">
+                                                <option value="Gaya">
+                                                <option value="Muzaffarpur">
+                                                <option value="Gurugram">
+                                                <option value="Noida">
+                                                <option value="Mumbai">
+                                                <option value="Bengaluru">
+                                                <option value="Chennai">
+                                                <option value="Kolkata">
+                                                <option value="Jaipur">
+                                                <option value="Lucknow">
+                                                <option value="Ahmedabad">
+                                                <option value="Hyderabad">
+                                            </datalist>
+                                        </div>
+                                    </div>
+                                    
+                                    <button type="button" class="btn primary-btn w-full" id="btn-run-prediction">
+                                        <span class="material-symbols-outlined">play_arrow</span> Run ML Inference
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div class="predict-result-container glass-panel">
+                                <h3 class="panel-title">Prediction Output</h3>
+                                <div class="prediction-loader" id="pred-loader" style="display: none;">
+                                    <div class="pulse-ring"></div>
+                                    <p>Analyzing input weights...</p>
+                                </div>
+                                <div class="prediction-result-body" id="pred-result-body">
+                                    <div class="radial-aqi-gauge">
+                                        <svg viewBox="0 0 100 100" class="circular-chart">
+                                            <path class="circle-bg" d="M18 2.0845 a 36 36 0 0 1 0 72.169 a 36 36 0 0 1 0 -72.169" />
+                                            <path id="circle-fill" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 36 36 0 0 1 0 72.169 a 36 36 0 0 1 0 -72.169" />
+                                            <text x="50" y="55" class="percentage" id="radial-aqi-number">--</text>
+                                            <text x="50" y="75" class="label">AQI</text>
+                                        </svg>
+                                    </div>
+                                    <div class="pred-cat-badge" id="pred-category-badge">Awaiting Input</div>
+                                    <p class="pred-recommendation-text" id="pred-recommendation-display">Adjust sliders on the left and click 'Run ML Inference' to predict values using the trained XGBoost model.</p>
+                                    
+                                    <div class="impact-breakdown">
+                                        <h4>Sensitivity Analysis</h4>
+                                        <p class="explanation-small">Relative feature impact on predicted AQI.</p>
+                                        <div class="impact-metric">
+                                            <span>PM2.5 Weighted Score</span>
+                                            <strong id="impact-pm25-score">--</strong>
+                                        </div>
+                                        <div class="impact-metric">
+                                            <span>PM10 Weighted Score</span>
+                                            <strong id="impact-pm10-score">--</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. CITY COMPARISON PANEL -->
+                <div class="content-panel" id="comparison-panel">
+                    <div class="panel-wrapper">
+                        <div class="panel-header-desc">
+                            <h2><span class="material-symbols-outlined title-icon">compare_arrows</span> Global City Comparison</h2>
+                            <p>Check and compare the real-time air quality metrics across major cities. Select cities to compare dynamic pollutant loads.</p>
+                        </div>
+                        
+                        <div class="comparison-grid">
+                            <div class="comparison-left glass-panel">
+                                <h3 class="panel-title">AQI Index Comparison</h3>
+                                <div class="chart-container" style="height: 320px;">
+                                    <canvas id="comparisonChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="comparison-right glass-panel">
+                                <h3 class="panel-title">Interactive City List</h3>
+                                <div class="table-container">
+                                    <table class="styled-table" id="comparison-table">
+                                        <thead>
+                                            <tr>
+                                                <th>City</th>
+                                                <th>AQI</th>
+                                                <th>Category</th>
+                                                <th>PM2.5</th>
+                                                <th>CO</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="comparison-table-body">
+                                            <!-- Dynamically filled -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. HISTORICAL DATA PANEL -->
+                <div class="content-panel" id="history-panel">
+                    <div class="panel-wrapper">
+                        <div class="panel-header-desc">
+                            <h2><span class="material-symbols-outlined title-icon">history</span> Historical Trends & Logs</h2>
+                            <p>Review the historical data logs saved locally. High resolution air pollution graphs over the previous month.</p>
+                        </div>
+                        
+                        <div class="history-grid">
+                            <div class="history-left glass-panel">
+                                <h3 class="panel-title">Air Quality Index Over Time</h3>
+                                <div class="chart-container" style="height: 350px;">
+                                    <canvas id="historyDetailedChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="history-right glass-panel">
+                                <h3 class="panel-title">Historical Log Records</h3>
+                                <p class="explanation-small">Hourly average records of current node location.</p>
+                                <div class="log-records-list" id="historical-logs-list">
+                                    <!-- Dynamic elements -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. HEALTH ADVISORY PANEL -->
+                <div class="content-panel" id="health-panel">
+                    <div class="panel-wrapper">
+                        <div class="panel-header-desc">
+                            <h2><span class="material-symbols-outlined title-icon">health_and_safety</span> Health Advisory Guidelines</h2>
+                            <p>Official WHO & CPCB air index health advisories, actions, and precautions recommended for citizens.</p>
+                        </div>
+                        
+                        <div class="health-cards-grid" id="health-cards-container">
+                            <!-- Dynamic or Static Cards containing health recommendations color-coded -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. ABOUT & MODEL INFO PANEL (Feature Importance and Badge Details) -->
+                <div class="content-panel" id="about-panel">
+                    <div class="panel-wrapper">
+                        <div class="panel-header-desc">
+                            <h2><span class="material-symbols-outlined title-icon">settings_suggest</span> Machine Learning Model & Transparency</h2>
+                            <p>AeroPredict is backed by a Random Forest Regressor trained on historic pollutant and climatic parameters.</p>
+                        </div>
+                        
+                        <div class="about-grid">
+                            <!-- Left: Feature Importance Chart -->
+                            <div class="about-card glass-panel flex-2">
+                                <h3 class="panel-title">
+                                    <span class="material-symbols-outlined title-icon" style="color: var(--color-pink)">bar_chart</span>
+                                    Model Feature Importance Weights
+                                </h3>
+                                <p class="explanation-small" style="margin-bottom: 20px;">Percentage weight each parameter contributes to the random forest splits.</p>
+                                <div class="chart-container" style="height: 300px;">
+                                    <canvas id="featureImportanceChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- Right: Metrics Badge Details -->
+                            <div class="about-card glass-panel flex-1">
+                                <h3 class="panel-title">
+                                    <span class="material-symbols-outlined title-icon" style="color: var(--color-katha)">verified</span>
+                                    Model Performance Metrics
+                                </h3>
+                                
+                                <div class="metrics-list">
+                                    <div class="metric-box">
+                                        <span class="metric-lbl">Coefficient of Determination (R²)</span>
+                                        <h4 class="metric-val" id="model-metric-r2">0.9142</h4>
+                                        <p class="metric-desc">Indicates that 91.4% of the variance in AQI is predictable from environmental variables.</p>
+                                    </div>
+                                    <div class="metric-box">
+                                        <span class="metric-lbl">Root Mean Squared Error (RMSE)</span>
+                                        <h4 class="metric-val" id="model-metric-rmse">8.214</h4>
+                                        <p class="metric-desc">Standard deviation of the residuals. Measures general prediction error magnitude.</p>
+                                    </div>
+                                    <div class="metric-box">
+                                        <span class="metric-lbl">Mean Absolute Error (MAE)</span>
+                                        <h4 class="metric-val" id="model-metric-mae">6.124</h4>
+                                        <p class="metric-desc">Average absolute difference between predictions and actual values.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Bottom Legend Strip (Floating) -->
+            <footer class="bottom-strip glass-panel">
+                <div class="legend-title">AQI Legend</div>
+                <div class="legend-scale">
+                    <div class="legend-step" style="--step-color: #2ecc71" data-range="0-50">
+                        <span>0-50</span>
+                        <strong>Good</strong>
+                    </div>
+                    <div class="legend-step" style="--step-color: #f1c40f" data-range="51-100">
+                        <span>51-100</span>
+                        <strong>Satisfactory</strong>
+                    </div>
+                    <div class="legend-step" style="--step-color: #e67e22" data-range="101-150">
+                        <span>101-150</span>
+                        <strong>Moderate</strong>
+                    </div>
+                    <div class="legend-step" style="--step-color: #e74c3c" data-range="151-200">
+                        <span>151-200</span>
+                        <strong>Poor</strong>
+                    </div>
+                    <div class="legend-step" style="--step-color: #9b59b6" data-range="201-300">
+                        <span>201-300</span>
+                        <strong>Very Poor</strong>
+                    </div>
+                    <div class="legend-step" style="--step-color: #7f0000" data-range="301+">
+                        <span>301+</span>
+                        <strong>Severe</strong>
+                    </div>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Leaflet.js Map script -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Main JS logic -->
+    <script src="js/app.js?v=1.6"></script>
+</body>
+</html>

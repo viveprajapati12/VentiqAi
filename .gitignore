@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+instance/
+.pytest_cache/
+.vscode/
+.idea/
+.gemini/
+aqi_data_log.csv
+inspect_user_model.py
+*.log
